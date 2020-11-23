@@ -9,7 +9,6 @@ from tkinter.ttk import *
 
 device = connection.connect()
 
-
 BASE_FREQ = 1915000  # Taken from machine HZ^6 -> MHz
 ITU_WIDTH = 500     # ITU channels are 50GHZ
 
@@ -110,9 +109,12 @@ def control_freq(freq,step):
             time.sleep(.5)
 
         #Wait for freq to stabilize
+        #TODO: Make this based on freq step size
+        #from 30K to -30K
         time.sleep(60)
     else:
-        time.sleep(INNER_TUNE_SLEEP + step)
+        # We can move about 1GHZ a second
+        time.sleep(INNER_TUNE_SLEEP + (step/10))
         # Everything is done, we are done
 
 
