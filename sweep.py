@@ -14,7 +14,9 @@ ITU_WIDTH = 500     # ITU channels are 50GHZ
 
 MIN_INCREMENT = 10  # Defined to match OSA min resolution
 
-INNER_TUNE_SLEEP = .4
+INNER_TUNE_SLEEP = 3
+
+MIN_HOLD_TIME = 2
 
 # MIN_INCREMENT = .01 # Min increment 1MHz -> laser will only return
 root = Tk()
@@ -88,7 +90,6 @@ def control_freq(freq,step):
         fine = (freq - new) * 100
         itu += 1
 
-    set_fine_freq(fine)
     set_itu_channel(itu)
 
     compare = get_itu_channel()
@@ -96,7 +97,7 @@ def control_freq(freq,step):
     if itu != compare:
         print('Changing from ITU channel:', compare, 'to:', itu)
 
-        time.sleep(3)
+        time.sleep(10)
 
         # See if laser is happy with its status
         # See manual for what this command does
@@ -108,24 +109,28 @@ def control_freq(freq,step):
             print('Want power higher: ', get_dbm())
             time.sleep(.5)
 
-        #Wait for freq to stabilize
-        #TODO: Make this based on freq step size
-        #from 30K to -30K
-        time.sleep(60)
-    else:
-        # We can move about 1GHZ a second
-        time.sleep(INNER_TUNE_SLEEP + (step/10))
-        # Everything is done, we are done
+    #Now we nedd to tune the fine freq
+    compare_fine = get_fine_freq()
+    set_fine_freq(fine)
 
+    #For example, 30,000 to -30,000 -> 60,000
+    diff = abs(compare_fine - fine)
+    
+    #if we are chaning ITU, give it some more time
+    if itu != compare:
+        diff *= 1.5
+    
+    print('Fine freq was: ', compare_fine, 'settng to: ', fine, ' change is: ', (diff/1000), 'GHz, waiting that many seconds')
+
+    #laser says it can move about 1Ghz per second
+    time.sleep(INNER_TUNE_SLEEP + (diff / 1000))
 
 def sweep(start, stop, step, hold):
     print('Sweeping between', start, 'and', stop, 'by', step)
 
     freq = start
     control_freq(freq, step)
-
-    diff = abs(hold)
-    time.sleep(diff)
+    time.sleep(hold)
 
     # We don't want to overshoot
     while (step > 0 and freq + step <= stop) or (step < 0 and freq + step >= stop):
@@ -144,9 +149,7 @@ def sweep(start, stop, step, hold):
 
         outputFreq.set(str(freq/10) + 'GHz')
         print('finished setting to freq: ', freq)
-
-        diff = abs(hold)
-        time.sleep(diff)
+        time.sleep(hold + MIN_HOLD_TIME)
         
     outputFreq.set('Done!')
 
