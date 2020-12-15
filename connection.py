@@ -9,7 +9,7 @@ def send_command(device_opaque_obj, command: str) -> str:
 
     reply = bytearray( 100 )
 
-    write_result = silabs_cp2110.Write( device_opaque_obj, command, len( command ) )
+    silabs_cp2110.Write( device_opaque_obj, command, len( command ) )
 
     #TODO: Does this need to be a second? Was just set here from example
     #time.sleep( 1 ) # Seconds

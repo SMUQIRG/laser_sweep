@@ -12,17 +12,12 @@ device = connection.connect()
 BASE_FREQ = 1915000  # Taken from machine HZ^6 -> MHz
 ITU_WIDTH = 500     # ITU channels are 50GHZ
 
-MIN_INCREMENT = 10  # Defined to match OSA min resolution
-
 INNER_TUNE_SLEEP = 3
-
 MIN_HOLD_TIME = 2
 
-# MIN_INCREMENT = .01 # Min increment 1MHz -> laser will only return
 root = Tk()
 root.title('Laser control')
 outputFreq = StringVar()
-
 
 def set_itu_channel(channel):
     command = 'LASER:CHANnel: ' + str(channel)
@@ -119,11 +114,20 @@ def control_freq(freq,step):
     #if we are chaning ITU, give it some more time
     if itu != compare:
         diff *= 1.5
-    
-    print('Fine freq was: ', compare_fine, 'settng to: ', fine, ' change is: ', (diff/1000), 'GHz, waiting that many seconds')
 
+    wait = 0
+    if compare_fine != fine:
+        wait = max(diff / 1000, 10)
+    
     #laser says it can move about 1Ghz per second
-    time.sleep(INNER_TUNE_SLEEP + (diff / 1000))
+    time.sleep(INNER_TUNE_SLEEP + wait)
+
+    while get_optical_freq() != freq:
+        print('mismatch between actual and requested freq!',
+            'Requested:', freq,
+            'Actual:',get_optical_freq(),
+        )
+        time.sleep(.1)
 
 def sweep(start, stop, step, hold):
     print('Sweeping between', start, 'and', stop, 'by', step)
@@ -139,13 +143,6 @@ def sweep(start, stop, step, hold):
         print('request freq: ', freq)
 
         control_freq(freq,step)
-
-        while get_optical_freq() != freq:
-            print('mismatch between actual and requested freq!',
-                'Requested:', freq,
-                'Actual:',get_optical_freq(),
-            )
-            time.sleep(.1)
 
         outputFreq.set(str(freq/10) + 'GHz')
         print('finished setting to freq: ', freq)
@@ -203,7 +200,6 @@ def start_gui():
     
     B = Button(root, text="Sweep", command=sweep_gui)
     B.grid(column=1, row=6)
-
 
     root.mainloop()
 
