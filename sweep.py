@@ -1,3 +1,5 @@
+# Author: Troy McNitt <tmcnitt@smu.edu>
+
 import silabs_cp2110
 import ctypes
 import random
@@ -18,6 +20,7 @@ MIN_HOLD_TIME = 2
 root = Tk()
 root.title('Laser control')
 outputFreq = StringVar()
+
 
 def set_itu_channel(channel):
     command = 'LASER:CHANnel: ' + str(channel)
@@ -62,7 +65,7 @@ def get_dbm():
     return float(resp)
 
 
-def control_freq(freq,step):
+def control_freq(freq, step):
     # This is the easy math
     # Just divide it by freq
     # Minus the offset of the start
@@ -104,30 +107,31 @@ def control_freq(freq,step):
             print('Want power higher: ', get_dbm())
             time.sleep(.5)
 
-    #Now we nedd to tune the fine freq
+    # Now we nedd to tune the fine freq
     compare_fine = get_fine_freq()
     set_fine_freq(fine)
 
-    #For example, 30,000 to -30,000 -> 60,000
+    # For example, 30,000 to -30,000 -> 60,000
     diff = abs(compare_fine - fine)
-    
-    #if we are chaning ITU, give it some more time
+
+    # if we are chaning ITU, give it some more time
     if itu != compare:
         diff *= 1.5
 
     wait = 0
     if compare_fine != fine:
         wait = max(diff / 1000, 10)
-    
-    #laser says it can move about 1Ghz per second
+
+    # laser says it can move about 1Ghz per second
     time.sleep(INNER_TUNE_SLEEP + wait)
 
     while get_optical_freq() != freq:
         print('mismatch between actual and requested freq!',
-            'Requested:', freq,
-            'Actual:',get_optical_freq(),
-        )
+              'Requested:', freq,
+              'Actual:', get_optical_freq(),
+              )
         time.sleep(.1)
+
 
 def sweep(start, stop, step, hold):
     print('Sweeping between', start, 'and', stop, 'by', step)
@@ -137,17 +141,18 @@ def sweep(start, stop, step, hold):
     time.sleep(hold)
 
     # We don't want to overshoot
-    while (step > 0 and freq + step <= stop) or (step < 0 and freq + step >= stop):
+    while (step > 0 and freq + step <=
+           stop) or (step < 0 and freq + step >= stop):
         freq += step
 
         print('request freq: ', freq)
 
-        control_freq(freq,step)
+        control_freq(freq, step)
 
-        outputFreq.set(str(freq/10) + 'GHz')
+        outputFreq.set(str(freq / 10) + 'GHz')
         print('finished setting to freq: ', freq)
         time.sleep(hold + MIN_HOLD_TIME)
-        
+
     outputFreq.set('Done!')
 
 
@@ -167,7 +172,7 @@ def start_gui():
     startLabel.grid(column=0, row=1)
     endLabel.grid(column=0, row=2)
     stepLabel.grid(column=0, row=3)
-    holdLabel.grid(column=0,row=4)
+    holdLabel.grid(column=0, row=4)
 
     outputLabel.grid(column=0, row=5)
     outputActual.grid(column=1, row=5)
@@ -182,7 +187,7 @@ def start_gui():
     stepEntry.grid(column=1, row=3)
 
     holdEntry = Entry(root)
-    holdEntry.grid(column=1,row=4)
+    holdEntry.grid(column=1, row=4)
 
     def sweep_gui():
         start = int(float(startEntry.get()) * 10)
@@ -195,9 +200,9 @@ def start_gui():
         else:
             hold = 0
 
-        thread = threading.Thread(target=sweep, args=(start,end,step, hold))
+        thread = threading.Thread(target=sweep, args=(start, end, step, hold))
         thread.start()
-    
+
     B = Button(root, text="Sweep", command=sweep_gui)
     B.grid(column=1, row=6)
 
